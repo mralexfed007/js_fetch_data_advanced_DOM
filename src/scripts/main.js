@@ -1,9 +1,7 @@
 'use strict';
 
-const phoneArr = ['fail test blablabla', 'samsung-gem', 'dell-venue',
+const phoneArr = ['sdfdsf', 'asf', 'blablaVdVSVXV', 'samsung-gem', 'dell-venue',
   'motorola-xoom-with-wi-fi', '2', 'sanyo-zio', 't-mobile-mytouch-4g'];
-let arr = [];
-const succssesArr = [];
 const body = document.querySelector('body');
 const BASE_URL
   = 'https://mate-academy.github.io/phone-catalogue-static/api/phones/';
@@ -12,15 +10,17 @@ const request = (url) => {
 };
 
 function getFirstReceivedDetails(idPhoneArr) {
-  arr = idPhoneArr.map(id => request(`${id}.json`));
+  const firstReceivedArr = idPhoneArr.map(id => request(`${id}.json`));
 
-  return Promise.race(arr);
+  return Promise.race(firstReceivedArr).then(phone => phone.json());
 }
 
 function getAllSuccessfulDetails(idPhoneArr) {
-  arr = idPhoneArr.map(id => request(`${id}.json`));
+  const allSuccessfulArr = idPhoneArr.map(id => {
+    return request(`${id}.json`).then(res => res.json());
+  });
 
-  return Promise.allSettled(arr);
+  return Promise.allSettled(allSuccessfulArr);
 }
 
 function notification(data) {
@@ -56,20 +56,11 @@ function notification(data) {
   }
 }
 
-getFirstReceivedDetails(phoneArr)
-  .then(phone => phone.json())
-  .then(notification);
+const firstRecive = getFirstReceivedDetails(phoneArr);
 
-const allSuccsses = getAllSuccessfulDetails(phoneArr).then(phoneArray => {
-  for (const phone of phoneArray) {
-    phone.value.json().then(phoneDetail => {
-      succssesArr.push(phoneDetail);
-    });
-  }
+const allSuccsses = getAllSuccessfulDetails(phoneArr)
+  .then(results => results.map(res => res.value)
+    .filter(value => value != null)).then(notification);
 
-  return succssesArr;
-});
-
-setTimeout(() => {
-  allSuccsses.then(notification);
-}, 1000);
+firstRecive.then(notification);
+allSuccsses.then(notification);
