@@ -1,6 +1,6 @@
 'use strict';
 
-const phoneArr = ['sdfdsf', 'asf', 'blablaVdVSVXV', 'samsung-gem', 'dell-venue',
+const phoneArr = ['wef', 'wef', 'wef', 'samsung-gem', 'dell-venue',
   'motorola-xoom-with-wi-fi', '2', 'sanyo-zio', 't-mobile-mytouch-4g'];
 const body = document.querySelector('body');
 const BASE_URL
@@ -23,6 +23,25 @@ function getAllSuccessfulDetails(idPhoneArr) {
   return Promise.allSettled(allSuccessfulArr);
 }
 
+function getThreeFastestDetails(idPhoneArr) {
+  const threeFastestArr = idPhoneArr.map(id => request(`${id}.json`));
+
+  return new Promise((resolve) => {
+    const promArr = [];
+
+    for (const promise of threeFastestArr) {
+      promise.then((result) => {
+        promArr.push(result);
+
+        if (promArr.length === 3) {
+          resolve(promArr);
+        }
+      });
+    }
+  }).then(arr => arr.map(res => res.json()))
+    .then(res => Promise.allSettled(res));
+}
+
 function notification(data) {
   const div = document.createElement('div');
   const h3 = document.createElement('h3');
@@ -39,6 +58,20 @@ function notification(data) {
     </ul>
     `);
     body.append(div);
+  } else if (data.length === 3) {
+    div.className = 'three-first';
+    h3.textContent = 'Three Fastest';
+    div.append(h3);
+
+    for (const phone of data) {
+      div.insertAdjacentHTML('beforeend', `
+    <ul>
+      <li>${phone.id}</li>
+      <li>${phone.name}</li>
+    </ul>
+    `);
+    }
+    body.prepend(div);
   } else {
     div.className = 'all-successful';
     h3.textContent = 'All Successful';
@@ -57,10 +90,12 @@ function notification(data) {
 }
 
 const firstRecive = getFirstReceivedDetails(phoneArr);
-
 const allSuccsses = getAllSuccessfulDetails(phoneArr)
-  .then(results => results.map(res => res.value)
-    .filter(value => value != null)).then(notification);
+  .then(results => results.filter(res => res.status === 'fulfilled')
+    .map(res => res.value));
+const threeFastest = getThreeFastestDetails(phoneArr)
+  .then(results => results.map(res => res.value));
 
 firstRecive.then(notification);
 allSuccsses.then(notification);
+threeFastest.then(notification);
