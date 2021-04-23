@@ -1,6 +1,6 @@
 'use strict';
 
-const phoneArr = ['wef', 'wef', 'wef', 'samsung-gem', 'dell-venue',
+const phoneArr = ['fwef', 'wedgzf', 'wzzef', 'samsung-gem', 'dell-venue',
   'motorola-xoom-with-wi-fi', '2', 'sanyo-zio', 't-mobile-mytouch-4g'];
 const body = document.querySelector('body');
 const BASE_URL
@@ -42,12 +42,12 @@ function getThreeFastestDetails(idPhoneArr) {
     .then(res => Promise.allSettled(res));
 }
 
-function notification(data) {
+function notification(data, divClass) {
   const div = document.createElement('div');
   const h3 = document.createElement('h3');
 
-  if (!data.length) {
-    div.className = 'first-received';
+  if (divClass === 'first-received') {
+    div.className = divClass;
     h3.textContent = 'First Received';
     div.append(h3);
 
@@ -58,8 +58,8 @@ function notification(data) {
     </ul>
     `);
     body.append(div);
-  } else if (data.length === 3) {
-    div.className = 'three-first';
+  } else if (divClass === 'three-first') {
+    div.className = divClass;
     h3.textContent = 'Three Fastest';
     div.append(h3);
 
@@ -96,6 +96,6 @@ const allSuccsses = getAllSuccessfulDetails(phoneArr)
 const threeFastest = getThreeFastestDetails(phoneArr)
   .then(results => results.map(res => res.value));
 
-firstRecive.then(notification);
-allSuccsses.then(notification);
-threeFastest.then(notification);
+firstRecive.then(res => notification(res, 'first-received'));
+allSuccsses.then(res => notification(res, 'all-successful'));
+threeFastest.then(res => notification(res, 'three-first'));
