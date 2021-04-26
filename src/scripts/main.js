@@ -1,7 +1,5 @@
 'use strict';
 
-const phoneArr = ['fwef', 'wedgzf', 'wzzef', 'samsung-gem', 'dell-venue',
-  'motorola-xoom-with-wi-fi', '2', 'sanyo-zio', 't-mobile-mytouch-4g'];
 const body = document.querySelector('body');
 const BASE_URL
   = 'https://mate-academy.github.io/phone-catalogue-static/api/phones/';
@@ -9,46 +7,54 @@ const request = (url) => {
   return fetch(`${BASE_URL}${url}`);
 };
 
-function getFirstReceivedDetails(idPhoneArr) {
-  const firstReceivedArr = idPhoneArr.map(id => request(`${id}.json`));
+function getAllId() {
+  // eslint-disable-next-line max-len
+  return fetch(`https://mate-academy.github.io/phone-catalogue-static/api/phones.json`)
+    .then(res => res.json()).then(result => {
+      const res = result.map(phone => phone.id);
 
-  return Promise.race(firstReceivedArr).then(phone => phone.json());
+      return res;
+    });
 }
 
-function getAllSuccessfulDetails(idPhoneArr) {
-  const allSuccessfulArr = idPhoneArr.map(id => {
-    return request(`${id}.json`).then(res => res.json());
-  });
-
-  return Promise.allSettled(allSuccessfulArr);
+function getFirstReceivedDetails() {
+  return getAllId().then(res => res.map(id => request(`${id}.json`)))
+    .then(res => Promise.race(res)).then(phone => phone.json());
 }
 
-function getThreeFastestDetails(idPhoneArr) {
-  const threeFastestArr = idPhoneArr.map(id => request(`${id}.json`));
+function getAllSuccessfulDetails() {
+  return getAllId().then(res => res.map(id => request(`${id}.json`)
+    .then(result => result.json())))
+    .then(allSuccessfulArr => Promise.allSettled(allSuccessfulArr));
+}
 
-  return new Promise((resolve) => {
-    const promArr = [];
+function getThreeFastestDetails() {
+  return getAllId().then(arr => arr.map(id => request(`${id}.json`)))
+    .then(threeFastestArr => {
+      return new Promise((resolve) => {
+        const promArr = [];
 
-    for (const promise of threeFastestArr) {
-      promise.then((result) => {
-        promArr.push(result);
-
-        if (promArr.length === 3) {
-          resolve(promArr);
+        for (let i = 0; i < threeFastestArr.length; i++) {
+          Promise.race(threeFastestArr).then(result => result.clone()
+            .json()).then(res => {
+            if (promArr.length < 3) {
+              promArr.push(res);
+            } else if (promArr.length === 3) {
+              resolve(promArr);
+            }
+          });
         }
       });
-    }
-  }).then(arr => arr.map(res => res.json()))
-    .then(res => Promise.allSettled(res));
+    }).then(res => Promise.allSettled(res));
 }
 
-function notification(data, divClass) {
+function createContainer(data, divClass, textContent) {
   const div = document.createElement('div');
   const h3 = document.createElement('h3');
 
-  if (divClass === 'first-received') {
+  if (!data.length) {
     div.className = divClass;
-    h3.textContent = 'First Received';
+    h3.textContent = textContent;
     div.append(h3);
 
     div.insertAdjacentHTML('beforeend', `
@@ -58,9 +64,9 @@ function notification(data, divClass) {
     </ul>
     `);
     body.append(div);
-  } else if (divClass === 'three-first') {
+  } else {
     div.className = divClass;
-    h3.textContent = 'Three Fastest';
+    h3.textContent = textContent;
     div.append(h3);
 
     for (const phone of data) {
@@ -72,30 +78,20 @@ function notification(data, divClass) {
     `);
     }
     body.prepend(div);
-  } else {
-    div.className = 'all-successful';
-    h3.textContent = 'All Successful';
-    div.append(h3);
-
-    for (const phone of data) {
-      div.insertAdjacentHTML('beforeend', `
-    <ul>
-      <li>${phone.id}</li>
-      <li>${phone.name}</li>
-    </ul>
-    `);
-    }
-    body.append(div);
   }
 }
 
-const firstRecive = getFirstReceivedDetails(phoneArr);
-const allSuccsses = getAllSuccessfulDetails(phoneArr)
+const firstRecive = getFirstReceivedDetails();
+const allSuccsses = getAllSuccessfulDetails()
   .then(results => results.filter(res => res.status === 'fulfilled')
     .map(res => res.value));
-const threeFastest = getThreeFastestDetails(phoneArr)
+const threeFastest = getThreeFastestDetails()
   .then(results => results.map(res => res.value));
 
-firstRecive.then(res => notification(res, 'first-received'));
-allSuccsses.then(res => notification(res, 'all-successful'));
-threeFastest.then(res => notification(res, 'three-first'));
+firstRecive
+  .then(res => createContainer(res, 'first-received', 'First Received'));
+
+allSuccsses
+  .then(res => createContainer(res, 'all-successful', 'All Successful'));
+
+threeFastest.then(res => createContainer(res, 'three-first', 'Three Fastest'));
