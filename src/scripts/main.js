@@ -32,15 +32,15 @@ function getThreeFastestDetails() {
   return getAllId().then(arr => arr.map(id => request(`${id}.json`)))
     .then(threeFastestArr => {
       return new Promise((resolve) => {
-        const promArr = [];
+        const resArr = [];
 
         for (let i = 0; i < threeFastestArr.length; i++) {
           Promise.race(threeFastestArr).then(result => result.clone()
             .json()).then(res => {
-            if (promArr.length < 3) {
-              promArr.push(res);
-            } else if (promArr.length === 3) {
-              resolve(promArr);
+            if (resArr.length < 3) {
+              resArr.push(res);
+            } else if (resArr.length === 3) {
+              resolve(resArr);
             }
           });
         }
@@ -51,34 +51,21 @@ function getThreeFastestDetails() {
 function createContainer(data, divClass, textContent) {
   const div = document.createElement('div');
   const h3 = document.createElement('h3');
+  const phoneArr = [].concat(data);
 
-  if (!data.length) {
-    div.className = divClass;
-    h3.textContent = textContent;
-    div.append(h3);
+  div.className = divClass;
+  h3.textContent = textContent;
+  div.append(h3);
 
+  for (const phone of phoneArr) {
     div.insertAdjacentHTML('beforeend', `
-    <ul>
-      <li>${data.id}</li>
-      <li>${data.name}</li>
-    </ul>
-    `);
-    body.append(div);
-  } else {
-    div.className = divClass;
-    h3.textContent = textContent;
-    div.append(h3);
-
-    for (const phone of data) {
-      div.insertAdjacentHTML('beforeend', `
-    <ul>
-      <li>${phone.id}</li>
-      <li>${phone.name}</li>
-    </ul>
-    `);
-    }
-    body.prepend(div);
+  <ul>
+    <li>${phone.id}</li>
+    <li>${phone.name}</li>
+  </ul>
+  `);
   }
+  body.prepend(div);
 }
 
 const firstRecive = getFirstReceivedDetails();
